@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gazole">
+<meta name="theme-color" content="#f5a623">
+<title>Gazole Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --card: #1c1f25;
+    --border: #2a2d35;
+    --accent: #f5a623;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --text: #f0f0f0;
+    --muted: #6b7080;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --font-body: 'DM Sans', sans-serif;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overscroll-behavior: none;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: calc(14px + var(--safe-top)) 18px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo { font-family: var(--font-display); font-size: 24px; letter-spacing: 3px; color: var(--accent); }
+  .logo span { color: var(--muted); font-size: 11px; font-family: var(--font-mono); display: block; letter-spacing: 1px; margin-top: -2px; }
+  .header-right { text-align: right; }
+  .header-budget-val { font-family: var(--font-display); font-size: 22px; color: var(--accent); }
+  .header-budget-lbl { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+
+  /* ===== STATUS BAR ===== */
+  .status-bar {
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .status-bar::-webkit-scrollbar { display: none; }
+  .stat-chip {
+    padding: 10px 16px;
+    border-right: 1px solid var(--border);
+    min-width: 110px;
+    flex-shrink: 0;
+  }
+  .stat-chip:last-child { border-right: none; }
+  .stat-chip .lbl { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; font-family: var(--font-mono); }
+  .stat-chip .val { font-family: var(--font-display); font-size: 22px; letter-spacing: 1px; }
+  .val.accent { color: var(--accent); }
+
+  /* ===== TABS ===== */
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 72px;
+    z-index: 99;
+  }
+  .tab {
+    flex: 1;
+    padding: 12px 8px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    user-select: none;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ===== PANELS ===== */
+  .panel { display: none; padding: 16px; padding-bottom: calc(16px + var(--safe-bot)); }
+  .panel.active { display: block; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card-title { font-family: var(--font-display); font-size: 15px; letter-spacing: 2px; color: var(--muted); margin-bottom: 12px; }
+
+  /* ===== PROGRESS ===== */
+  .budget-amounts { display: flex; align-items: baseline; gap: 6px; margin-bottom: 10px; }
+  .budget-spent { font-family: var(--font-display); font-size: 40px; color: var(--text); }
+  .budget-sep { font-family: var(--font-mono); font-size: 20px; color: var(--border); }
+  .budget-total { font-family: var(--font-display); font-size: 28px; color: var(--muted); }
+  .progress-track { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; margin-bottom: 8px; }
+  .progress-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease, background 0.3s; }
+  .progress-info { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-bottom: 10px; }
+
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 20px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; font-weight: 500;
+  }
+  .status-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .status-badge.ok { background: rgba(46,204,113,0.15); color: var(--green); border: 1px solid rgba(46,204,113,0.3); }
+  .status-badge.warn { background: rgba(245,166,35,0.15); color: var(--accent); border: 1px solid rgba(245,166,35,0.3); }
+  .status-badge.over { background: rgba(231,76,60,0.15); color: var(--red); border: 1px solid rgba(231,76,60,0.3); }
+
+  /* ===== CHART ===== */
+  canvas { width: 100% !important; display: block; }
+
+  /* ===== FORM ===== */
+  .form-group { margin-bottom: 14px; }
+  label {
+    display: block; font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 5px;
+  }
+  input, select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--font-mono); font-size: 16px;
+    padding: 12px 14px; border-radius: 10px; outline: none;
+    transition: border-color 0.2s; -webkit-appearance: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  input[type="date"] { color-scheme: dark; }
+
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .total-preview {
+    background: var(--bg); border: 1px solid var(--accent);
+    border-radius: 10px; padding: 12px; text-align: center; margin: 14px 0;
+  }
+  .total-preview .lbl { font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .total-preview .amount { font-family: var(--font-display); font-size: 44px; color: var(--accent); }
+
+  .btn-add {
+    width: 100%; background: var(--accent); color: #000;
+    border: none; border-radius: 10px; padding: 16px;
+    font-family: var(--font-display); font-size: 22px; letter-spacing: 3px;
+    cursor: pointer; transition: opacity 0.2s; margin-bottom: 6px;
+  }
+  .btn-add:active { opacity: 0.85; transform: scale(0.99); }
+
+  .btn-secondary {
+    width: 100%; background: transparent; color: var(--accent);
+    border: 1px solid var(--accent); border-radius: 10px; padding: 11px;
+    font-family: var(--font-mono); font-size: 12px; cursor: pointer;
+    transition: background 0.2s; margin-top: 8px;
+  }
+  .btn-secondary:active { background: rgba(245,166,35,0.1); }
+
+  /* ===== HISTORY ===== */
+  .entry-row {
+    display: grid; grid-template-columns: 52px 1fr 58px 64px 26px;
+    gap: 6px; align-items: center; padding: 11px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono); font-size: 12px;
+    animation: fadeIn 0.25s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(-5px); } to { opacity:1; transform:none; } }
+  .entry-row:last-child { border-bottom: none; }
+  .entry-date { color: var(--muted); font-size: 11px; }
+  .entry-station { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .entry-litres { color: var(--accent); text-align: right; }
+  .entry-total { color: var(--green); text-align: right; font-weight: 500; }
+  .entry-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; text-align: center; padding: 4px; }
+  .entry-del:active { color: var(--red); }
+
+  .no-data { text-align: center; padding: 40px 20px; color: var(--muted); font-family: var(--font-mono); font-size: 12px; line-height: 2; }
+
+  /* ===== SETTINGS ===== */
+  .info-box {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; font-family: var(--font-mono); font-size: 11px;
+    color: var(--muted); line-height: 1.8; margin-top: 14px;
+  }
+
+  /* ===== INSTALL BANNER ===== */
+  #installBanner {
+    display: none; position: fixed; bottom: calc(0px + var(--safe-bot)); left: 0; right: 0;
+    background: var(--accent); color: #000; padding: 14px 18px;
+    font-family: var(--font-mono); font-size: 12px;
+    display: flex; align-items: center; justify-content: space-between; z-index: 200;
+  }
+  #installBanner button { background: #000; color: var(--accent); border: none; border-radius: 6px; padding: 7px 14px; font-family: var(--font-mono); font-size: 11px; cursor: pointer; }
+  #installBanner .close { background: transparent; color: rgba(0,0,0,0.5); padding: 4px 8px; font-size: 16px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">⛽ GAZOLE<span>TRACKER DIESEL</span></div>
+  <div class="header-right">
+    <div class="header-budget-val" id="headerBudget">—</div>
+    <div class="header-budget-lbl">budget/mois</div>
+  </div>
+</header>
+
+<!-- STATS BAR -->
+<div class="status-bar">
+  <div class="stat-chip"><div class="lbl">Ce mois</div><div class="val accent" id="statMois">0 €</div></div>
+  <div class="stat-chip"><div class="lbl">Litres</div><div class="val" id="statLitres">0 L</div></div>
+  <div class="stat-chip"><div class="lbl">€/L moy.</div><div class="val" id="statPrix">—</div></div>
+  <div class="stat-chip"><div class="lbl">Pleins</div><div class="val" id="statPleins">0</div></div>
+  <div class="stat-chip"><div class="lbl">Total cumulé</div><div class="val" id="statTotal">0 €</div></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('suivi')">📊 SUIVI</div>
+  <div class="tab" onclick="switchTab('ajouter')">⛽ PLEIN</div>
+  <div class="tab" onclick="switchTab('historique')">📋 HISTORIQUE</div>
+  <div class="tab" onclick="switchTab('reglages')">⚙ BUDGET</div>
+</div>
+
+<!-- PANEL : SUIVI -->
+<div class="panel active" id="panel-suivi">
+
+  <div class="card">
+    <div class="card-title" id="monthLabel">MARS 2026</div>
+    <div class="budget-amounts">
+      <span class="budget-spent" id="progressSpent">0,00 €</span>
+      <span class="budget-sep">/</span>
+      <span class="budget-total" id="progressTotal">— €</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%;background:var(--green)"></div>
+    </div>
+    <div class="progress-info">
+      <span id="progressPct">0%</span>
+      <span id="progressRemain">Définir un budget →</span>
+    </div>
+    <div class="status-badge ok" id="statusBadge">EN ATTENTE DE DONNÉES</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">ÉVOLUTION 6 MOIS</div>
+    <canvas id="chartMois" height="160"></canvas>
+  </div>
+
+</div>
+
+<!-- PANEL : AJOUTER -->
+<div class="panel" id="panel-ajouter">
+  <div class="card">
+    <div class="card-title">NOUVEAU PLEIN GAZOLE</div>
+
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="inputDate">
+    </div>
+    <div class="form-group">
+      <label>Station (optionnel)</label>
+      <input type="text" id="inputStation" placeholder="Total, Leclerc…" maxlength="30" autocomplete="off">
+    </div>
+    <div class="input-row">
+      <div class="form-group">
+        <label>Litres</label>
+        <input type="number" id="inputLitres" placeholder="42" step="0.1" min="1" max="300" inputmode="decimal">
+      </div>
+      <div class="form-group">
+        <label>€ / litre</label>
+        <input type="number" id="inputPrix" placeholder="1,69" step="0.001" min="0.5" max="5" inputmode="decimal">
+      </div>
+    </div>
+
+    <div class="total-preview">
+      <div class="lbl">Total à payer</div>
+      <div class="amount" id="totalPreview">— €</div>
+    </div>
+
+    <button class="btn-add" onclick="addEntry()">+ ENREGISTRER</button>
+  </div>
+</div>
+
+<!-- PANEL : HISTORIQUE -->
+<div class="panel" id="panel-historique">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="card-title" style="margin-bottom:0">TOUS LES PLEINS</div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)" id="histCount">0 plein</div>
+    </div>
+    <div style="display:grid;grid-template-columns:52px 1fr 58px 64px 26px;gap:6px;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:4px;">
+      <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">DATE</span>
+      <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">STATION</span>
+      <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);text-align:right">LITRES</span>
+      <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);text-align:right">TOTAL</span>
+      <span></span>
+    </div>
+    <div id="histList">
+      <div class="no-data">Aucun plein.<br>Tape sur ⛽ PLEIN pour commencer.</div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL : RÉGLAGES -->
+<div class="panel" id="panel-reglages">
+  <div class="card">
+    <div class="card-title">MON BUDGET MENSUEL</div>
+    <div class="form-group">
+      <label>Budget en euros / mois</label>
+      <input type="number" id="budgetInput" placeholder="150" min="10" max="2000" step="10" inputmode="numeric">
+    </div>
+    <button class="btn-secondary" onclick="saveBudget()">✓ ENREGISTRER</button>
+  </div>
+
+  <div class="info-box">
+    ✅ Données stockées localement<br>
+    🔒 Rien n'est envoyé sur internet<br>
+    📱 Fonctionne hors ligne<br>
+    ♻ Données conservées même fermé
+  </div>
+</div>
+
+<!-- INSTALL BANNER -->
+<div id="installBanner" style="display:none">
+  <span>📲 Installer l'appli sur l'écran d'accueil</span>
+  <div style="display:flex;gap:8px">
+    <button onclick="installApp()">INSTALLER</button>
+    <button class="close" onclick="document.getElementById('installBanner').style.display='none'">✕</button>
+  </div>
+</div>
+
+<script>
+// ======== DATA ========
+let entries = JSON.parse(localStorage.getItem('gazoil_entries') || '[]');
+let budget = parseFloat(localStorage.getItem('gazoil_budget') || '0');
+let deferredPrompt = null;
+
+// ======== SERVICE WORKER ========
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// ======== INSTALL PROMPT ========
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'flex';
+});
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      document.getElementById('installBanner').style.display = 'none';
+    });
+  }
+}
+
+// ======== TABS ========
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['suivi','ajouter','historique','reglages'][i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'panel-' + name);
+  });
+  if (name === 'suivi') setTimeout(renderChart, 50);
+}
+
+// ======== INIT ========
+function init() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('inputDate').value = today;
+  if (budget > 0) document.getElementById('budgetInput').value = budget;
+
+  const now = new Date();
+  document.getElementById('monthLabel').textContent =
+    now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }).toUpperCase();
+
+  render();
+}
+
+// ======== PREVIEW ========
+document.getElementById('inputLitres').addEventListener('input', updatePreview);
+document.getElementById('inputPrix').addEventListener('input', updatePreview);
+
+function updatePreview() {
+  const l = parseFloat(document.getElementById('inputLitres').value);
+  const p = parseFloat(document.getElementById('inputPrix').value);
+  document.getElementById('totalPreview').textContent =
+    (l > 0 && p > 0) ? fmt(l * p) + ' €' : '— €';
+}
+
+// ======== ADD ========
+function addEntry() {
+  const date = document.getElementById('inputDate').value;
+  const station = document.getElementById('inputStation').value.trim() || 'Station';
+  const litres = parseFloat(document.getElementById('inputLitres').value);
+  const prix = parseFloat(document.getElementById('inputPrix').value);
+
+  if (!date || isNaN(litres) || isNaN(prix) || litres <= 0 || prix <= 0) {
+    alert('Remplis la date, les litres et le prix au litre.');
+    return;
+  }
+
+  entries.unshift({ id: Date.now(), date, station, litres, prix, total: litres * prix });
+  save();
+  render();
+
+  document.getElementById('inputLitres').value = '';
+  document.getElementById('inputPrix').value = '';
+  document.getElementById('inputStation').value = '';
+  document.getElementById('totalPreview').textContent = '— €';
+
+  // Feedback visuel
+  const btn = document.querySelector('.btn-add');
+  btn.textContent = '✓ ENREGISTRÉ !';
+  setTimeout(() => btn.textContent = '+ ENREGISTRER', 1500);
+
+  switchTab('suivi');
+}
+
+// ======== DELETE ========
+function deleteEntry(id) {
+  if (!confirm('Supprimer ce plein ?')) return;
+  entries = entries.filter(e => e.id !== id);
+  save();
+  render();
+}
+
+// ======== SAVE ========
+function save() { localStorage.setItem('gazoil_entries', JSON.stringify(entries)); }
+
+function saveBudget() {
+  const v = parseFloat(document.getElementById('budgetInput').value);
+  if (isNaN(v) || v < 10) { alert('Budget invalide.'); return; }
+  budget = v;
+  localStorage.setItem('gazoil_budget', v);
+  render();
+  const btn = document.querySelector('.btn-secondary');
+  btn.textContent = '✓ BUDGET SAUVEGARDÉ';
+  setTimeout(() => btn.textContent = '✓ ENREGISTRER', 1500);
+}
+
+// ======== RENDER ========
+function render() {
+  const now = new Date();
+  const moisKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const moisEntries = entries.filter(e => e.date.startsWith(moisKey));
+  const moisTotal = moisEntries.reduce((s, e) => s + e.total, 0);
+  const moisLitres = moisEntries.reduce((s, e) => s + e.litres, 0);
+  const allTotal = entries.reduce((s, e) => s + e.total, 0);
+  const allLitres = entries.reduce((s, e) => s + e.litres, 0);
+  const avgPrix = allLitres > 0 ? allTotal / allLitres : 0;
+
+  // Stats
+  document.getElementById('statMois').textContent = fmt(moisTotal) + ' €';
+  document.getElementById('statLitres').textContent = fmtL(moisLitres) + ' L';
+  document.getElementById('statPrix').textContent = avgPrix > 0 ? fmt(avgPrix) + ' €' : '—';
+  document.getElementById('statPleins').textContent = entries.length;
+  document.getElementById('statTotal').textContent = fmt(allTotal) + ' €';
+  document.getElementById('headerBudget').textContent = budget > 0 ? fmt(budget) + ' €' : '—';
+
+  // Progress
+  document.getElementById('progressSpent').textContent = fmt(moisTotal) + ' €';
+  document.getElementById('progressTotal').textContent = budget > 0 ? fmt(budget) + ' €' : '—';
+
+  const fill = document.getElementById('progressFill');
+  const badge = document.getElementById('statusBadge');
+  const remain = budget - moisTotal;
+
+  if (budget <= 0) {
+    fill.style.width = '0%';
+    fill.style.background = 'var(--muted)';
+    badge.className = 'status-badge warn';
+    badge.innerHTML = '⚙ Définis ton budget dans l\'onglet ⚙ BUDGET';
+    document.getElementById('progressPct').textContent = '0%';
+    document.getElementById('progressRemain').textContent = '';
+  } else {
+    const pct = Math.min((moisTotal / budget) * 100, 100);
+    fill.style.width = pct + '%';
+    document.getElementById('progressPct').textContent = Math.round(pct) + '%';
+    if (pct >= 100) {
+      fill.style.background = 'var(--red)';
+      badge.className = 'status-badge over';
+      badge.innerHTML = '⚠ DÉPASSEMENT : +' + fmt(Math.abs(remain)) + ' €';
+      document.getElementById('progressRemain').textContent = fmt(Math.abs(remain)) + ' € de trop';
+    } else if (pct >= 80) {
+      fill.style.background = 'var(--accent)';
+      badge.className = 'status-badge warn';
+      badge.innerHTML = '⚡ ATTENTION — ' + fmt(remain) + ' € restants';
+      document.getElementById('progressRemain').textContent = fmt(remain) + ' € restants';
+    } else {
+      fill.style.background = 'var(--green)';
+      badge.className = 'status-badge ok';
+      badge.innerHTML = '✓ DANS LE PLAN — ' + fmt(remain) + ' € disponibles';
+      document.getElementById('progressRemain').textContent = fmt(remain) + ' € restants';
+    }
+  }
+
+  // Historique
+  document.getElementById('histCount').textContent = entries.length + ' plein' + (entries.length > 1 ? 's' : '');
+  const list = document.getElementById('histList');
+  if (entries.length === 0) {
+    list.innerHTML = '<div class="no-data">Aucun plein.<br>Tape sur ⛽ PLEIN pour commencer.</div>';
+  } else {
+    list.innerHTML = entries.map(e => `
+      <div class="entry-row">
+        <span class="entry-date">${fmtDate(e.date)}</span>
+        <span class="entry-station">${e.station}</span>
+        <span class="entry-litres">${fmtL(e.litres)}L</span>
+        <span class="entry-total">${fmt(e.total)}€</span>
+        <button class="entry-del" onclick="deleteEntry(${e.id})">✕</button>
+      </div>
+    `).join('');
+  }
+
+  renderChart();
+}
+
+// ======== CHART ========
+function renderChart() {
+  const canvas = document.getElementById('chartMois');
+  if (!canvas.offsetWidth) return;
+  const ctx = canvas.getContext('2d');
+
+  const monthMap = {};
+  entries.forEach(e => {
+    const k = e.date.substring(0, 7);
+    monthMap[k] = (monthMap[k] || 0) + e.total;
+  });
+
+  const now = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    months.push({
+      key, val: monthMap[key] || 0,
+      label: d.toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase()
+    });
+  }
+
+  const W = canvas.offsetWidth;
+  const H = 160;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { t: 18, b: 36, l: 44, r: 12 };
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+  const maxVal = Math.max(...months.map(m => m.val), budget > 0 ? budget : 10, 10);
+  const bW = (cW / months.length) * 0.52;
+  const gap = cW / months.length;
+
+  // Budget line
+  if (budget > 0) {
+    const bY = pad.t + cH - (budget / maxVal) * cH;
+    ctx.beginPath(); ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = 'rgba(245,166,35,0.5)'; ctx.lineWidth = 1.5;
+    ctx.moveTo(pad.l, bY); ctx.lineTo(pad.l + cW, bY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = '9px DM Mono, monospace'; ctx.fillStyle = 'rgba(245,166,35,0.8)';
+    ctx.textAlign = 'right';
+    ctx.fillText('BUDGET', pad.l + cW, bY - 3);
+  }
+
+  // Bars
+  months.forEach((m, i) => {
+    const x = pad.l + i * gap + (gap - bW) / 2;
+    const bH = m.val > 0 ? Math.max((m.val / maxVal) * cH, 3) : 0;
+    const y = pad.t + cH - bH;
+    const isCur = m.key === now.toISOString().substring(0, 7);
+    const isOver = budget > 0 && m.val > budget;
+    const col = isOver ? '#e74c3c' : isCur ? '#f5a623' : '#2ecc71';
+    ctx.fillStyle = col + (isCur ? 'ff' : '88');
+    if (bH > 0) { roundRect(ctx, x, y, bW, bH, 3); }
+
+    ctx.fillStyle = isCur ? '#f0f0f0' : '#6b7080';
+    ctx.font = (isCur ? '500 ' : '') + '9px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(m.label, x + bW / 2, H - pad.b + 13);
+
+    if (m.val > 0) {
+      ctx.fillStyle = '#f0f0f0'; ctx.font = '9px DM Mono, monospace';
+      ctx.fillText(Math.round(m.val) + '€', x + bW / 2, y - 4);
+    }
+  });
+
+  // Grille Y
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+  [0, 1, 2, 3].forEach(i => {
+    const yv = pad.t + (cH / 3) * i;
+    ctx.beginPath(); ctx.moveTo(pad.l, yv); ctx.lineTo(pad.l + cW, yv); ctx.stroke();
+    ctx.fillStyle = '#6b7080'; ctx.font = '8px DM Mono, monospace'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxVal * (1 - i / 3)) + '€', pad.l - 3, yv + 3);
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h); ctx.lineTo(x, y + h);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath(); ctx.fill();
+}
+
+function fmt(n) { return n.toFixed(2).replace('.', ','); }
+function fmtL(n) { return n % 1 === 0 ? n.toFixed(0) : n.toFixed(1); }
+function fmtDate(s) { const [y, m, d] = s.split('-'); return `${d}/${m}`; }
+
+window.addEventListener('resize', renderChart);
+init();
+</script>
+</body>
+</html>
